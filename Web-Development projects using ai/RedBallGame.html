@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Red Ball 4 Prototype</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+
+    canvas {
+      border: 2px solid #333;
+    }
+
+    .popup-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .popup {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div class="popup-container" id="popupContainer">
+    <div class="popup" id="popup">
+      <p>Congratulations! You completed the level.</p>
+      <button id="nextLevelBtn">Next Level</button>
+    </div>
+  </div>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const ball = {
+      x: 50,
+      y: canvas.height - 50,
+      radius: 25,
+      color: '#ff0000',
+      velocityX: 0,
+      velocityY: 0,
+      speed: 5, // Constant speed
+      jumping: false
+    };
+
+    const levels = [
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 150, width: 200, height: 20 },
+          { x: 400, y: canvas.height - 280, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 150, y: canvas.height - 90, width: 30, height: 30 },
+          { x: 500, y: canvas.height - 210, width: 30, height: 30 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 100, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 200, width: 300, height: 20 },
+          { x: 500, y: canvas.height - 250, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 200, y: canvas.height - 150, width: 30, height: 30 },
+          { x: 450, y: canvas.height - 280, width: 50, height: 30 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 120, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 200, y: canvas.height - 200, width: 200, height: 20 },
+          { x: 500, y: canvas.height - 300, width: 300, height: 20 }
+        ],
+        obstacles: [
+          { x: 100, y: canvas.height - 150, width: 40, height: 40 },
+          { x: 600, y: canvas.height - 250, width: 50, height: 50 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 150, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 300, y: canvas.height - 150, width: 200, height: 20 },
+          { x: 600, y: canvas.height - 300, width: 300, height: 20 }
+        ],
+        obstacles: [
+          { x: 150, y: canvas.height - 100, width: 30, height: 30 },
+          { x: 700, y: canvas.height - 250, width: 60, height: 60 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 200, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 150, width: 400, height: 20 },
+          { x: 600, y: canvas.height - 300, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 200, y: canvas.height - 100, width: 40, height: 40 },
+          { x: 500, y: canvas.height - 250, width: 50, height: 50 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 250, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 150, y: canvas.height - 200, width: 300, height: 20 },
+          { x: 600, y: canvas.height - 300, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 100, y: canvas.height - 150, width: 40, height: 40 },
+          { x: 500, y: canvas.height - 250, width: 50, height: 50 },
+          { x: 300, y: canvas.height - 200, width: 30, height: 30 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 300, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 150, width: 200, height: 20 },
+          { x: 300, y: canvas.height - 300, width: 300, height: 20 }
+        ],
+        obstacles: [
+          { x: 150, y: canvas.height - 100, width: 30, height: 30 },
+          { x: 600, y: canvas.height - 250, width: 60, height: 60 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 350, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 200, y: canvas.height - 150, width: 200, height: 20 },
+          { x: 400, y: canvas.height - 300, width: 300, height: 20 }
+        ],
+        obstacles: [
+          { x: 250, y: canvas.height - 100, width: 40, height: 40 },
+          { x: 600, y: canvas.height - 250, width: 50, height: 50 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 400, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 200, width: 300, height: 20 },
+          { x: 500, y: canvas.height - 250, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 200, y: canvas.height - 150, width: 30, height: 30 },
+          { x: 450, y: canvas.height - 280, width: 50, height: 30 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 450, width: 50, height: 50 }
+      },
+      {
+        platforms: [
+          { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
+          { x: 100, y: canvas.height - 150, width: 200, height: 20 },
+          { x: 400, y: canvas.height - 280, width: 200, height: 20 }
+        ],
+        obstacles: [
+          { x: 150, y: canvas.height - 90, width: 30, height: 30 },
+          { x: 500, y: canvas.height - 210, width: 30, height: 30 }
+        ],
+        goal: { x: canvas.width - 100, y: canvas.height - 500, width: 50, height: 50 }
+      }
+    ];
+
+    let currentLevel = 0;
+    let popupContainer = document.getElementById('popupContainer');
+    let nextLevelBtn = document.getElementById('nextLevelBtn');
+    let goalReached = false;
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    nextLevelBtn.addEventListener('click', moveToNextLevel);
+
+    function handleKeyDown(event) {
+      if (event.key === 'ArrowLeft') {
+        ball.velocityX = -ball.speed;
+      } else if (event.key === 'ArrowRight') {
+        ball.velocityX = ball.speed;
+      } else if (event.key === 'ArrowUp' && !ball.jumping) {
+        ball.velocityY = -12;
+        ball.jumping = true;
+      }
+    }
+
+    function handleKeyUp(event) {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        ball.velocityX = 0;
+      }
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawPlatforms(platforms) {
+      platforms.forEach(platform => {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      });
+    }
+
+    function drawObstacles(obstacles) {
+      obstacles.forEach(obstacle => {
+        ctx.fillStyle = '#444444';
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      });
+    }
+
+    function drawGoal(goal) {
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const currentLevelData = levels[currentLevel];
+      drawPlatforms(currentLevelData.platforms);
+      drawObstacles(currentLevelData.obstacles);
+      drawGoal(currentLevelData.goal);
+      drawBall();
+
+      ball.x += ball.velocityX;
+      ball.y += ball.velocityY;
+
+      if (ball.y < canvas.height - ball.radius) {
+        ball.velocityY += 0.5; // Gravity
+      } else {
+        ball.y = canvas.height - ball.radius;
+        ball.velocityY = 0;
+        ball.jumping = false;
+      }
+
+      currentLevelData.platforms.forEach(platform => {
+        if (
+          ball.x + ball.radius > platform.x &&
+          ball.x - ball.radius < platform.x + platform.width &&
+          ball.y + ball.radius > platform.y &&
+          ball.y - ball.radius < platform.y + platform.height
+        ) {
+          ball.velocityY = 0;
+          ball.jumping = false;
+          ball.y = platform.y - ball.radius;
+        }
+      });
+
+      currentLevelData.obstacles.forEach(obstacle => {
+        if (
+          ball.x + ball.radius > obstacle.x &&
+          ball.x - ball.radius < obstacle.x + obstacle.width &&
+          ball.y + ball.radius > obstacle.y &&
+          ball.y - ball.radius < obstacle.y + obstacle.height
+        ) {
+          // Reset ball position
+          ball.x = 50;
+          ball.y = canvas.height - 50;
+        }
+      });
+
+      if (
+        ball.x + ball.radius > currentLevelData.goal.x &&
+        ball.x - ball.radius < currentLevelData.goal.x + currentLevelData.goal.width &&
+        ball.y + ball.radius > currentLevelData.goal.y &&
+        ball.y - ball.radius < currentLevelData.goal.y + currentLevelData.goal.height
+      ) {
+        goalReached = true;
+      }
+
+      if (goalReached) {
+        popupContainer.style.display = 'flex';
+        goalReached = false;
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    function moveToNextLevel() {
+      currentLevel++;
+      if (currentLevel >= levels.length) {
+        currentLevel = 0; // Loop back to the first level
+      }
+      popupContainer.style.display = 'none';
+    }
+    const ballStartPosition = { x: ball.x, y: ball.y }; // Store initial ball position
+
+    function moveToNextLevel() {
+  popupContainer.style.display = 'none';
+  goalReached = false; // Reset goalReached flag
+  currentLevel++;
+  if (currentLevel >= levels.length) {
+    currentLevel = 0; // Loop back to the first level
+  }
+  ball.x = ballStartPosition.x; // Reset ball's x position
+  ball.y = ballStartPosition.y; // Reset ball's y position
+  update();
+}
+
+    
+    update();
+  </script>
+</body>
+</html>
